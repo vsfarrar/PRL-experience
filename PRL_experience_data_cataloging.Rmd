@@ -1,0 +1,53 @@
+---
+title: "PRL Experience"
+output: html_notebook
+---
+Issues: Need to fill in blanks of sex and experience in this dataset. 
+Is this all the birds culled for covid19?
+What about chicks and fledge rates?
+
+```{r data import}
+#import data 
+dat <-read.csv("~/Documents/projects/PRL_experience/prl_experience_brains_data.csv", stringsAsFactors = F)
+
+#cleanup data
+dat <-
+dat %>%
+  mutate_at(funs(as.numeric), .vars = vars(nest_count:age_years)) %>% #convert to numeric for binning
+  mutate(sex =  case_when(grepl("m", sex) ~ "m", #clean up sex data for readability
+                            grepl("f", sex) ~"f"))
+
+```
+
+```{r sample sizes}
+#sample size
+colnames(dat)
+
+dat %>%
+  group_by(experience,sex) %>%
+  tally()
+
+#experienced birds: ranges of nest counts 
+dat %>%
+  filter(experience == "y") %>%
+  group_by(nest_no = cut(nest_count, breaks = seq(0,30,10)), sex) %>%
+  tally()
+
+#inexperienced birds by age
+dat %>%
+  drop_na(age_years) %>%
+  filter(experience == "n") %>%
+  group_by(sex, age = cut(age_years, breaks = seq(0,4,0.5))) %>%
+  tally()
+```
+```{r}
+#experienced birds: by nest no and age 
+dat %>%
+  drop_na(age_years)%>%
+  filter(experience == "y") %>%
+  group_by(nest_no = cut(nest_count, breaks = seq(0,30,10)), age = cut(age_years, breaks = seq(0,4,1))) %>%
+  tally()
+```
+
+
+
