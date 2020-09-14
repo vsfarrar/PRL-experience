@@ -47,7 +47,22 @@ dat %>%
   filter(experience == "y") %>%
   group_by(nest_no = cut(nest_count, breaks = seq(0,30,10)), age = cut(age_years, breaks = seq(0,4,1))) %>%
   tally()
+
+#birds with no active nests: by experience 
+dat %>%
+  filter(active_nest_at_collection == "n") %>%
+  mutate(hadChicks = ifelse(chicks_hatched > 0, "1", "0")) %>%
+  group_by(sex, hadChicks) %>%
+  tally()
+
+
+dat %>%
+  filter(active_nest_at_collection == "n") %>%
+  mutate(hadChicks = ifelse(chicks_hatched > 0, "1", "0")) %>%
+  mutate(olderThan2 = ifelse(age_years >2, "1", "0")) %>%
+  group_by(sex, hadChicks, olderThan2) %>%
+  tally()
 ```
-
-
-
+what is reproductive maturity in these birds (i.e. what is the youngest ages we have seen first nests)?
+(I totally calculated this once)
+get birds older than that age but younger than 1 years old. 
