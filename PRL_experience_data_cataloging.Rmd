@@ -2,9 +2,6 @@
 title: "PRL Experience"
 output: html_notebook
 ---
-Issues: Need to fill in blanks of sex and experience in this dataset. 
-Is this all the birds culled for covid19?
-What about chicks and fledge rates?
 
 ```{r data import}
 #import data 
@@ -61,6 +58,13 @@ dat %>%
   mutate(hadChicks = ifelse(chicks_hatched > 0, "1", "0")) %>%
   mutate(olderThan2 = ifelse(age_years >2, "1", "0")) %>%
   group_by(sex, hadChicks, olderThan2) %>%
+  tally()
+
+#experienced birds: by nest no and age 
+dat %>%
+  filter(active_nest_at_collection == "n") %>%
+  mutate(hadChicks = ifelse(chicks_hatched > 0, "1", "0")) %>%
+  group_by(sex, hadChicks, age = cut(age_years, breaks = seq(0,4,1))) %>%
   tally()
 ```
 what is reproductive maturity in these birds (i.e. what is the youngest ages we have seen first nests)?
