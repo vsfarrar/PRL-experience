@@ -1,0 +1,154 @@
+---
+title: "ROPI Database Searcher"
+author: "Victoria"
+date: "10/16/2020"
+output: html_document
+---
+ISSUES: 
+Currently, nest_count and nests do not match. 
+Appears birds with no experience are not being included in the final "birds" dataset (due to join type?)
+
+```{r setup}
+library(tidyverse)
+library(lubridate)
+library(zoo) #parses month/year dates
+```
+
+```{r import data}
+#import data
+
+#import Banding Records (direct export from FileMaker Pro)
+bands <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_BandingRecords_all.csv", stringsAsFactors = FALSE)
+
+#import Nest Summary (direct export from FileMaker Pro)
+nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_NestSummary_all.csv", stringsAsFactors = FALSE)
+
+#import Eligible Birds file (if needed)
+birds<-read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/eligible_birds_for_experience_exp.csv")
+```
+
+```{r dataset cleanup }
+#dataset cleanup 
+
+#clean up BandingRecords data
+
+#select relevant columns
+bands<-bands %>%
+  select(BandNum, c_DateHatch, Cage, ColorBand, Date_Deceased, Date_Hatch, Room, Sex) 
+
+#convert to date
+bands$DateHatch<-as.Date(bands$c_DateHatch,format = "%m/%d/%Y")
+bands$Date_Deceased<-as.Date(bands$Date_Deceased,format = "%m/%d/%Y")
+
+
+#clean up NestSummary data
+
+#extract numerical band numbers and then create a combo of parent_ids for searching
+nests<- nests %>%
+  mutate(id1 = str_extract(AdultId_1BandNum, "([[:digit:]]+)"), 
+         id2 = str_extract(AdultId_2BandNum, "([[:digit:]]+)")) %>%
+  mutate(parent_ids = mapply(c, id1, id2, SIMPLIFY = F))
+```
+
+```{r today's date}
+#grab current date using Sys.Date()
+current_date <- as.Date(Sys.Date(), format = "%m/%d/%Y")
+```
+
+```{r bands of living birds}
+#create list of birds that are alive today
+
+bands_alive <- bands %>%
+  filter(is.na(Date_Deceased)) %>% #has no Date_Deceased date
+  filter(!is.na(BandNum)) %>% #has a Band Number
+  mutate(age_days = difftime(current_date, DateHatch, unit = "days")) #calculate current age from hatch
+```
+
+```{r gather nest experience data}
+
+#grab Band Numbers for all birds alive currently 
+
+all_bands <-as.character(bands_alive$BandNum) #convert to character for search
+
+#initialize empty vectors
+band_combo <- vector() 
+nest_count <- vector()
+
+for (i in 1:length(all_bands)){ 
+    band_combo[i] <- all_bands[i] 
+    nest_count[i]<- length(grep(all_bands[i],nests$parent_ids)) #get # of rows (nests) where bird was parent
+} 
+
+#put the two vectors together 
+birds_alive_exp<- data.frame(cbind(band_combo, nest_count)) 
+
+#convert to as character for join
+birds_alive_exp$band_combo<-as.character(birds_alive_exp$band_combo)
+bands_alive$BandNum<-as.character(bands_alive$BandNum)
+
+#join for experience and age in one dataset
+living_birds <- 
+  right_join(bands_alive, birds_alive_exp, by = c("BandNum" = "band_combo")) %>%
+  mutate(nest_count = as.numeric(nest_count)) %>%
+  mutate(age_years = as.numeric(age_days)/365) %>%
+  mutate(Sex =  case_when(grepl("m", Sex) ~ "m", #clean up sex data for readability
+                            grepl("f", Sex) ~"f")) %>%
+  select(Room, Cage, BandNum, everything()) %>%
+  arrange(Room, Cage, Sex)
+
+```
+
+```{r more detailed experience info}
+#get more detailed experience information on eggs, hatches, and fledgelings 
+
+#make only one parental id
+colnames(nests)
+  
+test1 <- nests %>% select(-id2) %>% rename("id" = "id1")
+test2 <- nests %>% select(-id1) %>% rename("id" = "id2")
+
+test_all <- rbind(test1,test2) 
+
+
+#nest_info gives all nests, eggs, chicks and fledgelings for a band number 
+
+nest_info <-
+test_all %>%
+  filter(!is.na(id)) %>% #exclude nests without parent ids
+  filter(NumEggsLaid < 6,
+         NumChicksHatched < 4, 
+         NumChicksFledged < 4) %>% #exclude potential outliers in clutch size
+  filter(as.numeric(id) > 200) %>%
+  group_by(id) %>%
+  summarise(nests = n(), 
+            eggs = sum(NumEggsLaid, na.rm = T), 
+            chicks = sum(as.numeric(NumChicksHatched), na.rm = T), 
+            fledge = sum(as.numeric(NumChicksFledged), na.rm = T)) %>%
+  arrange(as.numeric(id))
+
+
+#join detailed experience info (nest_info) with living_birds dataset 
+
+birds <- inner_join(living_birds, nest_info, by = c("BandNum" = "id")) 
+
+#now all info in one dataframe:
+colnames(birds)
+```
+
+#SEARCH! 
+Edit these searches to grab the data you are interested in. 
+To see variables you can filter by, use colnames(birds). 
+
+```{r search} 
+birds %>%
+  filter(as.numeric(nest_count) > 1, 
+         between(age_years,1,2),
+         Room == "3",
+         Sex == "m") %>%
+ arrange(Sex, desc(age_days)) 
+```
+
+
+
+
+
