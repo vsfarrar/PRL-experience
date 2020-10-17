@@ -4,9 +4,6 @@ author: "Victoria"
 date: "10/16/2020"
 output: html_document
 ---
-ISSUES: 
-Currently, nest_count and nests do not match. 
-Appears birds with no experience are not being included in the final "birds" dataset (due to join type?)
 
 ```{r setup}
 library(tidyverse)
@@ -89,7 +86,7 @@ bands_alive$BandNum<-as.character(bands_alive$BandNum)
 #join for experience and age in one dataset
 living_birds <- 
   right_join(bands_alive, birds_alive_exp, by = c("BandNum" = "band_combo")) %>%
-  mutate(nest_count = as.numeric(nest_count)) %>%
+  mutate(nest_count = as.numeric(as.character(nest_count))) %>%
   mutate(age_years = as.numeric(age_days)/365) %>%
   mutate(Sex =  case_when(grepl("m", Sex) ~ "m", #clean up sex data for readability
                             grepl("f", Sex) ~"f")) %>%
@@ -115,10 +112,7 @@ test_all <- rbind(test1,test2)
 nest_info <-
 test_all %>%
   filter(!is.na(id)) %>% #exclude nests without parent ids
-  filter(NumEggsLaid < 6,
-         NumChicksHatched < 4, 
-         NumChicksFledged < 4) %>% #exclude potential outliers in clutch size
-  filter(as.numeric(id) > 200) %>%
+  #filter(as.numeric(id) > 200) %>%
   group_by(id) %>%
   summarise(nests = n(), 
             eggs = sum(NumEggsLaid, na.rm = T), 
@@ -128,8 +122,9 @@ test_all %>%
 
 
 #join detailed experience info (nest_info) with living_birds dataset 
+  #10/17/2020 : nest_count and nests now match. 
 
-birds <- inner_join(living_birds, nest_info, by = c("BandNum" = "id")) 
+birds <- left_join(living_birds, nest_info, by = c("BandNum" = "id")) 
 
 #now all info in one dataframe:
 colnames(birds)
