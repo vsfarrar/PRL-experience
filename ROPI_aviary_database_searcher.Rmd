@@ -1,30 +1,31 @@
 ---
 title: "ROPI Database Searcher"
-author: "Victoria"
-date: "10/16/2020"
-output: html_document
+author: "V.S. Farrar"
+date: 'Code created: 10/16/2020'
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-```{r setup}
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(lubridate)
 library(zoo) #parses month/year dates
 ```
 
-```{r import data}
-#import data
+# Data Files Used 
+Update the below data files with the most up-to-date BandingRecords and NestSummary files from FileMaker pro. 
 
+```{r import data}
 #import Banding Records (direct export from FileMaker Pro)
 bands <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_BandingRecords_all.csv", stringsAsFactors = FALSE)
 
 #import Nest Summary (direct export from FileMaker Pro)
 nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_NestSummary_all.csv", stringsAsFactors = FALSE)
 
-#import Eligible Birds file (if needed)
-birds<-read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/eligible_birds_for_experience_exp.csv")
 ```
 
-```{r dataset cleanup }
+```{r dataset cleanup,echo = FALSE }
 #dataset cleanup 
 
 #clean up BandingRecords data
@@ -47,12 +48,15 @@ nests<- nests %>%
   mutate(parent_ids = mapply(c, id1, id2, SIMPLIFY = F))
 ```
 
-```{r today's date}
+# Date of Search
+```{r todays date, echo = FALSE}
 #grab current date using Sys.Date()
 current_date <- as.Date(Sys.Date(), format = "%m/%d/%Y")
+
+print(paste0("Current date when searched: ", current_date))
 ```
 
-```{r bands of living birds}
+```{r bands of living birds, echo = FALSE}
 #create list of birds that are alive today
 
 bands_alive <- bands %>%
@@ -61,7 +65,7 @@ bands_alive <- bands %>%
   mutate(age_days = difftime(current_date, DateHatch, unit = "days")) #calculate current age from hatch
 ```
 
-```{r gather nest experience data}
+```{r gather nest experience data, echo = FALSE}
 
 #grab Band Numbers for all birds alive currently 
 
@@ -95,11 +99,10 @@ living_birds <-
 
 ```
 
-```{r more detailed experience info}
+```{r more detailed experience info, echo=FALSE, message=FALSE, warning=FALSE}
 #get more detailed experience information on eggs, hatches, and fledgelings 
 
 #make only one parental id
-colnames(nests)
   
 test1 <- nests %>% select(-id2) %>% rename("id" = "id1")
 test2 <- nests %>% select(-id1) %>% rename("id" = "id2")
@@ -127,21 +130,27 @@ test_all %>%
 birds <- left_join(living_birds, nest_info, by = c("BandNum" = "id")) 
 
 #now all info in one dataframe:
-colnames(birds)
+#colnames(birds)
 ```
 
-#SEARCH! 
-Edit these searches to grab the data you are interested in. 
-To see variables you can filter by, use colnames(birds). 
+# Search Results: 
 
-```{r search} 
+
+```{r search query, paged.print=TRUE}
+#Edit these searches to grab the data you are interested in. 
+#To see variables you can filter by, use 
+#colnames(birds). 
+
 birds %>%
-  filter(as.numeric(nest_count) > 1, 
+  filter(chicks > 1, 
          between(age_years,1,2),
          Room == "3",
          Sex == "m") %>%
- arrange(Sex, desc(age_days)) 
+ arrange(Sex, desc(age_days)) %>%
+  select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks)
+
 ```
+
 
 
 
