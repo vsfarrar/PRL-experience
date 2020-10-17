@@ -13,7 +13,7 @@ library(lubridate)
 library(zoo) #parses month/year dates
 ```
 
-# Data Files Used 
+### Data Files Used 
 Update the below data files with the most up-to-date BandingRecords and NestSummary files from FileMaker pro. 
 
 ```{r import data}
@@ -48,7 +48,7 @@ nests<- nests %>%
   mutate(parent_ids = mapply(c, id1, id2, SIMPLIFY = F))
 ```
 
-# Date of Search
+## Date of Search
 ```{r todays date, echo = FALSE}
 #grab current date using Sys.Date()
 current_date <- as.Date(Sys.Date(), format = "%m/%d/%Y")
@@ -135,6 +135,9 @@ birds <- left_join(living_birds, nest_info, by = c("BandNum" = "id"))
 
 # Search Results: 
 
+## Query:
+
+Inexperienced females in room 3 who have never had chicks, 1-2 years old. (to even out sample sizes for experience study)
 
 ```{r search query, paged.print=TRUE}
 #Edit these searches to grab the data you are interested in. 
@@ -142,10 +145,10 @@ birds <- left_join(living_birds, nest_info, by = c("BandNum" = "id"))
 #colnames(birds). 
 
 birds %>%
-  filter(chicks > 1, 
+  filter(is.na(nests), 
          between(age_years,1,2),
          Room == "3",
-         Sex == "m") %>%
+         Sex == "f") %>%
  arrange(Sex, desc(age_days)) %>%
   select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks)
 
