@@ -16,12 +16,12 @@ library(zoo) #parses month/year dates
 ### Data Files Used 
 Update the below data files with the most up-to-date BandingRecords and NestSummary files from FileMaker pro. 
 
-```{r import data}
+```{r import data, echo = FALSE}
 #import Banding Records (direct export from FileMaker Pro)
 bands <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_BandingRecords_all.csv", stringsAsFactors = FALSE)
 
 #import Nest Summary (direct export from FileMaker Pro)
-nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_NestSummary_all.csv", stringsAsFactors = FALSE)
+nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-10-24_NestSummary_all.csv", stringsAsFactors = FALSE)
 
 ```
 
@@ -104,16 +104,16 @@ living_birds <-
 
 #make only one parental id
   
-test1 <- nests %>% select(-id2) %>% rename("id" = "id1")
-test2 <- nests %>% select(-id1) %>% rename("id" = "id2")
+parent1_nest<- nests %>% select(-id2) %>% rename("id" = "id1")
+parent2_nest<- nests %>% select(-id1) %>% rename("id" = "id2")
 
-test_all <- rbind(test1,test2) 
+all_nests <- rbind(test1,test2) 
 
 
-#nest_info gives all nests, eggs, chicks and fledgelings for a band number 
+#nests_by_bird gives all nests, eggs, chicks and fledgelings for a band number 
 
-nest_info <-
-test_all %>%
+nests_by_bird <-
+all_nests %>%
   filter(!is.na(id)) %>% #exclude nests without parent ids
   #filter(as.numeric(id) > 200) %>%
   group_by(id) %>%
@@ -127,17 +127,27 @@ test_all %>%
 #join detailed experience info (nest_info) with living_birds dataset 
   #10/17/2020 : nest_count and nests now match. 
 
-birds <- left_join(living_birds, nest_info, by = c("BandNum" = "id")) 
+birds <- left_join(living_birds, nests_by_bird, by = c("BandNum" = "id")) 
 
 #now all info in one dataframe:
 #colnames(birds)
 ```
+```{r search active nests, echo = FALSE}
+#search active nests 
+active_nests <- 
+  all_nests %>%
+  mutate(d_Inactive = as.Date(d_Inactive, format = "%m/%d/%Y"),
+         d_FirstEgg = as.Date(d_FirstEgg, format = "%m/%d/%Y")) %>% #convert key dates
+  filter(is.na(d_Inactive), year(d_FirstEgg) == 2020) %>%  #no inactive date, must be in current year
+  select(X_kP_NestId, RoomNum, CageNum,id,d_FirstEgg) %>%  #select relevant variables
+  mutate(time_point = difftime(current_date, d_FirstEgg, unit = "days"))  #calculate days since lay of current nest
+  
+```
+
 
 # Search Results: 
 
 ## Query:
-
-Inexperienced females in room 3 who have never had chicks, 1-2 years old. (to even out sample sizes for experience study)
 
 ```{r search query, paged.print=TRUE}
 #Edit these searches to grab the data you are interested in. 
@@ -145,12 +155,20 @@ Inexperienced females in room 3 who have never had chicks, 1-2 years old. (to ev
 #colnames(birds). 
 
 birds %>%
-  filter(is.na(nests), 
-         between(age_years,1,2),
+  filter(nests >10, 
          Room == "3",
          Sex == "f") %>%
  arrange(Sex, desc(age_days)) %>%
-  select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks)
+  select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks) %>%
+  left_join(., active_nests, by = c("BandNum" = "id")) #join active nest effort data with bird data 
+
+
+
+birds %>%
+  filter( Room == "3") %>%
+ arrange(Sex, desc(age_days)) %>%
+  mutate(ActivelyBreeding = ifelse(BandNum %in% active_nests$id, 1, 0)) %>% #see if birds are actively breeding
+  filter(ActivelyBreeding == 0) #select birds that are not actively breeding
 
 ```
 
