@@ -107,7 +107,7 @@ living_birds <-
 parent1_nest<- nests %>% select(-id2) %>% rename("id" = "id1")
 parent2_nest<- nests %>% select(-id1) %>% rename("id" = "id2")
 
-all_nests <- rbind(test1,test2) 
+all_nests <- rbind(parent1_nest, parent2_nest) 
 
 
 #nests_by_bird gives all nests, eggs, chicks and fledgelings for a band number 
@@ -154,13 +154,13 @@ active_nests <-
 #To see variables you can filter by, use 
 #colnames(birds). 
 
-birds %>%
-  filter(nests >10, 
-         Room == "3",
-         Sex == "f") %>%
- arrange(Sex, desc(age_days)) %>%
-  select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks) %>%
-  left_join(., active_nests, by = c("BandNum" = "id")) #join active nest effort data with bird data 
+# birds %>%
+#   filter(nests >10, 
+#          Room == "3",
+#          Sex == "f") %>%
+#  arrange(Sex, desc(age_days)) %>%
+#   select(Room, Cage, BandNum, ColorBand, Sex, age_years,nests, chicks) %>%
+#   left_join(., active_nests, by = c("BandNum" = "id")) #join active nest effort data with bird data 
 
 
 
