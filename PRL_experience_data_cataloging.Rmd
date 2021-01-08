@@ -5,15 +5,7 @@ output: html_notebook
 
 ```{r data import}
 #import data 
-dat <-read.csv("~/Documents/projects/PRL_experience/prl_experience_brains_data.csv", stringsAsFactors = F)
-
-#cleanup data
-dat <-
-dat %>%
-  mutate_at(funs(as.numeric), .vars = vars(nest_count:age_years)) %>% #convert to numeric for binning
-  mutate(sex =  case_when(grepl("m", sex) ~ "m", #clean up sex data for readability
-                            grepl("f", sex) ~"f"))
-
+dat <-read.csv("~/Documents/projects/PRL_experience/prl_experience_brains_data_updated.csv", stringsAsFactors = F)
 ```
 
 ```{r sample sizes}
@@ -21,20 +13,31 @@ dat %>%
 colnames(dat)
 
 dat %>%
-  group_by(experience,sex) %>%
+  filter(active_nest_collection == 0) %>%
+  group_by(experience_chicks, sex) %>%
   tally()
+```
 
-#experienced birds: ranges of nest counts 
+```{r}
+#experienced birds: ranges of chicks hatched
 dat %>%
-  filter(experience == "y") %>%
-  group_by(nest_no = cut(nest_count, breaks = seq(0,30,10)), sex) %>%
+  filter(experience_chicks == 1) %>%
+  group_by(nest_no = cut(total_chicks, breaks = seq(0,20,5)), sex) %>%
   tally()
 
 #inexperienced birds by age
 dat %>%
+  filter(active_nest_collection == 0) %>%
   drop_na(age_years) %>%
-  filter(experience == "n") %>%
-  group_by(sex, age = cut(age_years, breaks = seq(0,4,0.5))) %>%
+  filter(experience_nests == 0) %>%
+  group_by(age = cut(age_years, breaks = seq(0,4,1)), sex) %>%
+  tally()
+
+#all birds sample size
+
+dat %>%
+  filter(active_nest_collection == 0) %>%
+  group_by(experience_chicks, age = cut(age_years, breaks = seq(0,4,1)), sex) %>%
   tally()
 ```
 ```{r}
