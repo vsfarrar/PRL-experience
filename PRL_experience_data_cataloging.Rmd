@@ -32,14 +32,27 @@ dat %>%
   filter(experience_nests == 0) %>%
   group_by(age = cut(age_years, breaks = seq(0,4,1)), sex) %>%
   tally()
+```
 
+
+```{r all brains sample}
 #all birds sample size
 
 dat %>%
-  filter(active_nest_collection == 0) %>%
+  filter(active_nest_collection == 0) %>% 
   group_by(experience_chicks, age = cut(age_years, breaks = seq(0,4,1)), sex) %>%
   tally()
+
+id_list_for_export <-
+dat %>%
+  filter(active_nest_collection == 0) %>%
+  mutate(age_group = cut(age_years, breaks = seq(0,4,1))) %>%
+  select(id, sex, experience_chicks, age_years, age_group) %>%
+  arrange(id)
+
+write.csv(id_list_for_export,"~/Documents/projects/PRL_experience/experience_brains_to_slice_with_id.csv")
 ```
+
 ```{r}
 #experienced birds: by nest no and age 
 dat %>%
