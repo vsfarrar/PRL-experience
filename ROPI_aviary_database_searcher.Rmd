@@ -3,8 +3,8 @@ title: "ROPI Database Searcher"
 author: "V.S. Farrar"
 date: 'Code created: 10/16/2020'
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
@@ -18,10 +18,10 @@ Update the below data files with the most up-to-date BandingRecords and NestSumm
 
 ```{r import data, echo = FALSE}
 #import Banding Records (direct export from FileMaker Pro)
-bands <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-09-19_BandingRecords_all.csv", stringsAsFactors = FALSE)
+bands <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2021-03-05_BandingRecords_all.csv", stringsAsFactors = FALSE)
 
 #import Nest Summary (direct export from FileMaker Pro)
-nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2020-10-24_NestSummary_all.csv", stringsAsFactors = FALSE)
+nests <- read.csv("~/Documents/projects/PRL_experience/data_for_experimental_design_culling/2021-03-05_NestSummary_all.csv", stringsAsFactors = FALSE)
 
 ```
 
@@ -132,6 +132,7 @@ birds <- left_join(living_birds, nests_by_bird, by = c("BandNum" = "id"))
 #now all info in one dataframe:
 #colnames(birds)
 ```
+
 ```{r search active nests, echo = FALSE}
 #search active nests 
 active_nests <- 
@@ -166,12 +167,24 @@ active_nests <-
 
 birds %>%
   filter( Room == "3") %>%
- arrange(Sex, desc(age_days)) %>%
+ arrange(Sex, chicks) %>%
   mutate(ActivelyBreeding = ifelse(BandNum %in% active_nests$id, 1, 0)) %>% #see if birds are actively breeding
-  filter(ActivelyBreeding == 0) #select birds that are not actively breeding
+  filter(between(age_years, 1,2)) %>%
+  filter(ActivelyBreeding == 0) %>% #select birds that are not actively breeding
+  filter(chicks == 0 & eggs <= 10) %>%
+  select(-Date_Deceased, -Date_Hatch, -age_days)
 
 ```
-
+```{r}
+birds %>%
+  filter( Room == "3") %>%
+ arrange(Sex, age_years) %>%
+  mutate(ActivelyBreeding = ifelse(BandNum %in% active_nests$id, 1, 0)) %>% #see if birds are actively breeding
+  filter(between(age_years, 1,2)) %>%
+  filter(ActivelyBreeding == 0) %>% #select birds that are not actively breeding
+  filter(chicks >= 1) %>%
+  select(-Date_Deceased, -Date_Hatch, -age_days)
+```
 
 
 
